@@ -1,0 +1,30 @@
+# Java
+backend/target/
+*.class
+*.jar
+*.log
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+npm-debug.log*
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+
+# Secrets
+.env
+*.pem
+kubeconfig

@@ -1,0 +1,52 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: petshop-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: sonnak123
+      MYSQL_DATABASE: petshop
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - petshop-network
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: petshop-backend:1.0
+    container_name: petshop-backend
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    environment:
+      DB_URL: "jdbc:mysql://mysql:3306/petshop?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+      DB_USERNAME: petshop
+      DB_PASSWORD: petshop_dev_password
+    depends_on:
+      - mysql
+    networks:
+      - petshop-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: petshop-frontend:1.0
+    container_name: petshop-frontend
+    ports:
+      - "5175:5175"
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - petshop-network
+
+volumes:
+  mysql_data:
+
+networks:
+  petshop-network:
+    driver: bridge
