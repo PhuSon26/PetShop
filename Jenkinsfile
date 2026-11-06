@@ -40,14 +40,12 @@ pipeline {
 
         stage('SonarQube Analysis') {
             steps {
-                dir('backend') {
-                    withSonarQubeEnv('sonar-server') {
-                        sh '''
-                            mvn sonar:sonar \
-                                -Dsonar.projectName=PetShop \
-                                -Dsonar.projectKey=PetShop
-                        '''
-                    }
+                withSonarQubeEnv('sonar-server') {
+                    sh '''
+                        mvn org.sonarsource.scanner.maven:sonar-maven-plugin:5.2.0.4988:sonar \
+                            -Dsonar.projectKey=PetShop \
+                            -Dsonar.projectName=PetShop
+                    '''
                 }
             }
         }
