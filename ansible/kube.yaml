@@ -15,7 +15,7 @@
         dest: "{{ manifests_dir }}/"
         mode: "0644"
 
-    - name: Create or update DB secret (not stored in Git)
+    - name: Create or update DB secret
       shell: |
         kubectl create secret generic petshop-secret \
           --from-literal=db-password='{{ db_password }}' \
@@ -29,7 +29,7 @@
     - debug:
         var: apply_out.stdout_lines
 
-    - name: Roll out the image tag built by this pipeline
+    - name: Roll out the image tag
       command: >
         kubectl set image deployment/{{ item }}
         {{ item }}={{ dockerhub_user }}/petshop-{{ item }}:{{ image_tag }}

@@ -11,10 +11,7 @@ frontend/.env
 npm-debug.log*
 
 # IDE / OS
-.idea/
 .vscode/
-.DS_Store
-Thumbs.db
 
 # Terraform
 **/.terraform/*
@@ -22,7 +19,6 @@ Thumbs.db
 *.tfstate.*
 *.tfvars
 !*.tfvars.example
-crash.log
 .terraform.lock.hcl
 
 # Secrets

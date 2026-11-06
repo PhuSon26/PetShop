@@ -38,7 +38,6 @@ resource "aws_instance" "my_ec2_instance" {
   }
 }
 
-# Launch the first EC2 instance
 resource "aws_instance" "my_ec2_instance1" {
   ami             = "ami-02a9cdd4e98bc3c78"
   instance_type   = "t3.small"
@@ -54,7 +53,6 @@ resource "aws_instance" "my_ec2_instance1" {
   }
 }
 
-# Launch the second EC2 instance
 resource "aws_instance" "my_ec2_instance2" {
   ami             = "ami-02a9cdd4e98bc3c78"
   instance_type   = "t3.small"

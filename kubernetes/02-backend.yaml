@@ -39,7 +39,6 @@ spec:
             requests: {cpu: 100m, memory: 256Mi}
             limits: {memory: 640Mi}
 ---
-# Service name "backend" matches proxy_pass in frontend/nginx.conf
 apiVersion: v1
 kind: Service
 metadata:
