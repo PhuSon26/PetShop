@@ -75,12 +75,17 @@ pipeline {
             steps {
                 dir('backend') {
                     dependencyCheck(
-                        additionalArguments: '--scan ./ --format XML',
+                        additionalArguments: '''
+                            --scan .
+                            --format XML
+                            --out .
+                            --project PetShop
+                        ''',
                         odcInstallation: 'DP-Check'
                     )
 
                     dependencyCheckPublisher(
-                        pattern: '**/dependency-check-report.xml'
+                        pattern: 'dependency-check-report.xml'
                     )
                 }
             }
