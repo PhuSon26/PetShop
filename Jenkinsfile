@@ -93,32 +93,68 @@ pipeline {
 
         stage('Docker Build and Push') {
             steps {
-                dir('Ansible') {
+                dir('ansible') {
                     withCredentials([
-                        string(
-                            credentialsId: 'dockerhub-password',
-                            variable: 'DOCKERHUB_PASSWORD'
-                        )
+                        string(credentialsId: 'dockerhub-password', variable: 'DOCKERHUB_PASSWORD'),
+                        string(credentialsId: 'petshop-db-password', variable: 'DB_PASSWORD'),
+                        string(credentialsId: 'petshop-mysql-root-password', variable: 'MYSQL_ROOT_PASSWORD')
                     ]) {
                         ansiblePlaybook(
                             installation: 'ansible',
                             inventory: '/etc/ansible/hosts',
                             playbook: 'docker-playbook.yaml',
-                            disableHostKeyChecking: true
+                            disableHostKeyChecking: true,
+                            extraVars: [
+                                dockerhub_password: [value: "${DOCKERHUB_PASSWORD}", hidden: true],
+                                db_password: [value: "${DB_PASSWORD}", hidden: true],
+                                mysql_root_password: [value: "${MYSQL_ROOT_PASSWORD}", hidden: true],
+                                image_tag: "${env.BUILD_NUMBER}",
+                                workspace: "${env.WORKSPACE}"
+                            ]
                         )
                     }
                 }
             }
         }
 
-        stage('k8s using ansible'){
-            steps{
-                dir('Ansible') {
-                    script{
-                        ansiblePlaybook credentialsId: 'ssh', disableHostKeyChecking: true, installation: 'ansible', inventory: '/etc/ansible/', playbook: 'kube.yaml'
+        stage('Trivy Image Scan') {
+            steps {
+                sh """
+                    trivy image --severity HIGH,CRITICAL --exit-code 0 --no-progress \
+                        phuson0206/petshop-backend:${env.BUILD_NUMBER}
+                    trivy image --severity HIGH,CRITICAL --exit-code 0 --no-progress \
+                        phuson0206/petshop-frontend:${env.BUILD_NUMBER}
+                """
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                dir('ansible') {
+                    withCredentials([
+                        string(credentialsId: 'petshop-db-password', variable: 'DB_PASSWORD'),
+                        string(credentialsId: 'petshop-mysql-root-password', variable: 'MYSQL_ROOT_PASSWORD')
+                    ]) {
+                        ansiblePlaybook(
+                            credentialsId: 'ssh',
+                            installation: 'ansible',
+                            inventory: '/etc/ansible/hosts',
+                            playbook: 'kube.yaml',
+                            disableHostKeyChecking: true,
+                            extraVars: [
+                                db_password: [value: "${DB_PASSWORD}", hidden: true],
+                                mysql_root_password: [value: "${MYSQL_ROOT_PASSWORD}", hidden: true],
+                                image_tag: "${env.BUILD_NUMBER}"
+                            ]
+                        )
                     }
                 }
             }
         }
+    }
+
+    post {
+        success { echo 'PetShop deployed: http://<k8s-worker-ip>:30699' }
+        failure { echo 'Pipeline failed - check the stage logs above.' }
     }
 }

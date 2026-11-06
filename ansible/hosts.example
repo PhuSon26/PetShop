@@ -1,0 +1,10 @@
+[local]
+localhost ansible_connection=local
+
+[k8s]
+172.31.28.114
+172.31.27.216
+
+[k8s:vars]
+ansible_user=ubuntu
+ansible_python_interpreter=/usr/bin/python3

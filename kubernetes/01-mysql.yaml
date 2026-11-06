@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: petshop-mysql-pv
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes: [ReadWriteOnce]
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual
+  hostPath:
+    path: /data/petshop-mysql
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: petshop-mysql-pvc
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: manual
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mysql
+  labels: {app: mysql}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: {app: mysql}
+  template:
+    metadata:
+      labels: {app: mysql}
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+          env:
+            - name: MYSQL_DATABASE
+              value: petshop
+            - name: MYSQL_USER
+              value: petshop
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: petshop-secret, key: db-password}
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: petshop-secret, key: mysql-root-password}
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "mysqladmin ping -h 127.0.0.1 -uroot -p$MYSQL_ROOT_PASSWORD"]
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {memory: 768Mi}
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: petshop-mysql-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+spec:
+  selector: {app: mysql}
+  ports:
+    - port: 3306
+      targetPort: 3306

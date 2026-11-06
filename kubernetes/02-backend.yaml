@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels: {app: backend}
+spec:
+  replicas: 2
+  selector:
+    matchLabels: {app: backend}
+  template:
+    metadata:
+      labels: {app: backend}
+    spec:
+      containers:
+        - name: backend
+          image: phuson0206/petshop-backend:1.0
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 9090
+          env:
+            - name: DB_URL
+              value: "jdbc:mysql://mysql:3306/petshop?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+            - name: DB_USERNAME
+              value: petshop
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef: {name: petshop-secret, key: db-password}
+          startupProbe:
+            httpGet: {path: /actuator/health/liveness, port: 9090}
+            failureThreshold: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet: {path: /actuator/health/readiness, port: 9090}
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: {path: /actuator/health/liveness, port: 9090}
+            periodSeconds: 20
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {memory: 640Mi}
+---
+# Service name "backend" matches proxy_pass in frontend/nginx.conf
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+spec:
+  selector: {app: backend}
+  ports:
+    - port: 9090
+      targetPort: 9090

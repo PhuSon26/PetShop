@@ -1,0 +1,45 @@
+- name: Docker build and push PetShop
+  hosts: local
+  become: yes
+  vars:
+    dockerhub_user: phuson0206
+    image_tag: "1.0"
+    workspace: /var/lib/jenkins/workspace/petshop-ci
+
+  tasks:
+    - name: Update apt package cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Build backend image
+      command: docker build -t {{ dockerhub_user }}/petshop-backend:{{ image_tag }} -t {{ dockerhub_user }}/petshop-backend:latest .
+      args:
+        chdir: "{{ workspace }}/backend"
+
+    - name: Build frontend image
+      command: docker build -t {{ dockerhub_user }}/petshop-frontend:{{ image_tag }} -t {{ dockerhub_user }}/petshop-frontend:latest .
+      args:
+        chdir: "{{ workspace }}/frontend"
+
+    - name: Log in to Docker Hub
+      shell: echo "$DH_PASS" | docker login -u {{ dockerhub_user }} --password-stdin
+      environment:
+        DH_PASS: "{{ dockerhub_password }}"
+      no_log: true
+
+    - name: Push images
+      command: docker push {{ item }}
+      loop:
+        - "{{ dockerhub_user }}/petshop-backend:{{ image_tag }}"
+        - "{{ dockerhub_user }}/petshop-backend:latest"
+        - "{{ dockerhub_user }}/petshop-frontend:{{ image_tag }}"
+        - "{{ dockerhub_user }}/petshop-frontend:latest"
+
+    - name: Run PetShop with Docker Compose
+      command: docker compose up -d --build
+      args:
+        chdir: "{{ workspace }}"
+      environment:
+        DB_PASSWORD: "{{ db_password }}"
+        MYSQL_ROOT_PASSWORD: "{{ mysql_root_password }}"

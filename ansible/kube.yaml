@@ -1,0 +1,46 @@
+- name: Deploy PetShop to Kubernetes
+  hosts: k8s
+  vars:
+    dockerhub_user: phuson0206
+    image_tag: "1.0"
+    manifests_dir: /home/ubuntu/petshop-k8s
+    kubeconfig: /home/ubuntu/.kube/config
+  environment:
+    KUBECONFIG: "{{ kubeconfig }}"
+
+  tasks:
+    - name: Copy Kubernetes manifests to master
+      copy:
+        src: ../kubernetes/
+        dest: "{{ manifests_dir }}/"
+        mode: "0644"
+
+    - name: Create or update DB secret (not stored in Git)
+      shell: |
+        kubectl create secret generic petshop-secret \
+          --from-literal=db-password='{{ db_password }}' \
+          --from-literal=mysql-root-password='{{ mysql_root_password }}' \
+          --dry-run=client -o yaml | kubectl apply -f -
+      no_log: true
+
+    - name: Apply manifests
+      command: kubectl apply -f {{ manifests_dir }}/
+      register: apply_out
+    - debug:
+        var: apply_out.stdout_lines
+
+    - name: Roll out the image tag built by this pipeline
+      command: >
+        kubectl set image deployment/{{ item }}
+        {{ item }}={{ dockerhub_user }}/petshop-{{ item }}:{{ image_tag }}
+      loop: [backend, frontend]
+
+    - name: Wait for rollouts
+      command: kubectl rollout status deployment/{{ item }} --timeout=300s
+      loop: [mysql, backend, frontend]
+
+    - name: Show resources
+      command: kubectl get all -o wide
+      register: k8s_all
+    - debug:
+        var: k8s_all.stdout_lines

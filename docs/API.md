@@ -1,6 +1,6 @@
 # Petshop API
 
-Base URL local: `http://localhost:8080`
+Base URL local: `http://localhost:9090`
 
 ## Pets
 
