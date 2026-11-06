@@ -4,8 +4,15 @@ services:
     container_name: petshop-mysql
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: sonnak123
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: petshop
+      MYSQL_USER: petshop
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
     ports:
       - "3306:3306"
     volumes:
@@ -24,9 +31,10 @@ services:
     environment:
       DB_URL: "jdbc:mysql://mysql:3306/petshop?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
       DB_USERNAME: petshop
-      DB_PASSWORD: petshop_dev_password
+      DB_PASSWORD: ${DB_PASSWORD}
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     networks:
       - petshop-network
 
