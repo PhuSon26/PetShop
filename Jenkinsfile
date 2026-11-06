@@ -6,7 +6,7 @@ pipeline {
     }
 
     environment {
-        SCANNER_HOME = tool 'sonnar-scanner'
+        SCANNER_HOME = tool 'sonar-scanner'
     }
 
     stages{
@@ -59,7 +59,7 @@ pipeline {
                 sh 'mvn clean install -DskipTests=true'
             }
         }
-        
+
         stage("OWASP Dependency Check"){
             steps{
                 dependencyCheck additionalArguments: '--scan ./ --format XML ', odcInstallation: 'DP-Check'
